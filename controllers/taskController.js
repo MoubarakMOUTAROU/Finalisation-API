@@ -2,7 +2,7 @@ const Task = require('../models/Task');
 
 exports.getAllTasks = async (req, res) => {
   try {
-    const tasks = await Task.find().populate('user', 'nom email');
+    const tasks = await Task.find({ user: req.userId }).populate('user', 'nom email');
     res.json(tasks);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -11,7 +11,8 @@ exports.getAllTasks = async (req, res) => {
 
 exports.getTaskById = async (req, res) => {
   try {
-    const task = await Task.findById(req.params.id).populate('user', 'nom email');
+    const task = await Task.findOne({ _id: req.params.id, user: req.userId })
+      .populate('user', 'nom email');
     if (!task) {
       return res.status(404).json({ message: 'Tâche non trouvée' });
     }
@@ -23,7 +24,10 @@ exports.getTaskById = async (req, res) => {
 
 exports.createTask = async (req, res) => {
   try {
-    const task = await Task.create(req.body);
+    const task = await Task.create({
+      ...req.body,
+      user: req.userId
+    });
     res.status(201).json(task);
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -32,8 +36,8 @@ exports.createTask = async (req, res) => {
 
 exports.updateTask = async (req, res) => {
   try {
-    const task = await Task.findByIdAndUpdate(
-      req.params.id,
+    const task = await Task.findOneAndUpdate(
+      { _id: req.params.id, user: req.userId },
       req.body,
       { new: true, runValidators: true }
     );
@@ -48,7 +52,7 @@ exports.updateTask = async (req, res) => {
 
 exports.deleteTask = async (req, res) => {
   try {
-    const task = await Task.findByIdAndDelete(req.params.id);
+    const task = await Task.findOneAndDelete({ _id: req.params.id, user: req.userId });
     if (!task) {
       return res.status(404).json({ message: 'Tâche non trouvée' });
     }
